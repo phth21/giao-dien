@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Smart Garden IoT - Cloud Version</title>
+<script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+  :root { --bg: linear-gradient(135deg, #74b9ff 0%, #a29bfe 100%); }
+  body { margin:0; font-family: 'Nunito', sans-serif; background: var(--bg); min-height: 100vh; padding: 10px; color: #2d3436; }
+  .container { max-width: 1000px; margin: 0 auto; background: rgba(255,255,255,0.95); border-radius: 20px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+  
+  /* Tabs Navigation */
+  .tabs { display: flex; justify-content: center; margin-bottom: 20px; border-bottom: 2px solid #eee; }
+  .tab-btn { padding: 15px 30px; border: none; background: none; font-size: 1.2rem; font-weight: bold; cursor: pointer; color: #b2bec3; }
+  .tab-btn.active { color: #0984e3; border-bottom: 4px solid #0984e3; }
+  
+  .page-section { display: none; animation: fadeIn 0.5s; }
+  .page-section.active { display: block; }
+
+  /* Dashboard Styles */
+  .soil-circle { width: 200px; height: 200px; border-radius: 50%; border: 15px solid #dfe6e9; display: flex; flex-direction: column; justify-content: center; align-items: center; margin: 0 auto; background: white; }
+  .soil-num { font-size: 3.5rem; font-weight: 900; color: #00b894; }
+  .stats-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin: 20px 0; }
+  .stat-box { background: #f1f2f6; padding: 10px; border-radius: 10px; text-align: center; font-weight: bold; }
+  .btn { padding: 15px; width: 100%; border: none; border-radius: 10px; font-weight: bold; color: white; cursor: pointer; font-size: 1rem; margin-top: 5px; }
+  .bon { background: #00b894; } .boff { background: #636e72; }
+  
+  /* History Styles */
+  table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+  th, td { padding: 10px; text-align: left; border-bottom: 1px solid #eee; font-size: 0.9rem; }
+  .tag { padding: 3px 8px; border-radius: 10px; font-size: 0.75rem; color: white; }
+  .bg-blue { background: #0984e3; } .bg-green { background: #00b894; } .bg-red { background: #d63031; }
+
+  @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+  .emergency { border-color: red !important; }
+</style>
+</head>
+<body>
+
+<div class="container">
+    <h2 style="text-align:center; margin-top:0">🌱 Smart Garden IoT</h2>
+    
+    <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('dashboard')">Điều Khiển</button>
+        <button class="tab-btn" onclick="switchTab('history')">Lịch Sử</button>
+    </div>
+
+    <div id="dashboard" class="page-section active">
+        <div style="text-align:center; margin-bottom: 20px;">
+            <div class="soil-circle" id="soilBox">
+                <span class="soil-num" id="soil">--</span><span>%</span>
+            </div>
+            <h3 id="pumpSt" style="color:#636e72">MÁY BƠM TẮT</h3>
+            <div id="warn" style="color:red; font-weight:bold; min-height:20px"></div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-box">🌡️ <span id="temp">--</span>°C</div>
+            <div class="stat-box">💧 <span id="hum">--</span>%</div>
+            <div class="stat-box">🌧️ <span id="rain">--</span>mm</div>
+        </div>
+
+        <div style="background:#e3f2fd; padding:15px; border-radius:10px; margin-bottom:20px">
+            <b>🤖 AI Status:</b> <span id="aiReason">Đang chờ dữ liệu...</span><br>
+            <small>Mục tiêu: <span id="aiTarget">--</span> | Thời gian: <span id="aiTime">--</span></small>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px">
+            <button class="btn bon" onclick="controlPump(true)">BẬT BƠM</button>
+            <button class="btn boff" onclick="controlPump(false)">TẮT BƠM</button>
+        </div>
+        
+        <div style="margin-top:15px; text-align:center">
+             <button onclick="changeMode('AUTO')" style="background:#6c5ce7; border:none; color:white; padding:10px; border-radius:5px; cursor:pointer">Chế độ AUTO</button>
+             <button onclick="changeMode('MANUAL')" style="background:#fdcb6e; border:none; color:black; padding:10px; border-radius:5px; cursor:pointer">Chế độ MANUAL</button>
+             <p>Mode hiện tại: <b id="currentMode">...</b></p>
+        </div>
+    </div>
+
+    <div id="history" class="page-section">
+        <div style="display:flex; justify-content:center; gap:10px">
+            <input type="date" id="dateInput" style="padding:8px; border-radius:5px; border:1px solid #ccc">
+            <button onclick="loadHistory()" style="padding:8px 15px; background:#0984e3; color:white; border:none; border-radius:5px; cursor:pointer">Xem</button>
+        </div>
+        <table>
+            <thead>
+                <tr style="background:#eee">
+                    <th>Giờ</th>
+                    <th>Hành động</th>
+                    <th>Chi tiết</th>
+                </tr>
+            </thead>
+            <tbody id="histBody">
+                <tr><td colspan="3" align="center">Chọn ngày để xem...</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+// ================= 1. CẤU HÌNH FIREBASE =================
+// ⚠️ THAY ĐỔI ĐOẠN NÀY BẰNG CẤU HÌNH CỦA BẠN (Lấy ở Bước 1)
+const firebaseConfig = {
+  apiKey: "AIzaSyD5d7s-pjoQO4N_a_0OsPAhTMxSkNZOkCY",
+  authDomain: "tuoicay-30be7.firebaseapp.com",
+  databaseURL: "https://tuoicay-30be7-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "tuoicay-30be7",
+  storageBucket: "tuoicay-30be7.firebasestorage.app",
+  messagingSenderId: "337051698716",
+  appId: "1:337051698716:web:175874891d781c644c81d9"
+};
+
+// Khởi tạo Firebase
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+// ================= 2. KẾT NỐI MQTT (HiveMQ) =================
+const BROKER = 'wss://broker.hivemq.com:8884/mqtt';
+const PREFIX = "thaocute_smartgarden/";
+const client = mqtt.connect(BROKER);
+
+client.on('connect', () => {
+    console.log("MQTT Connected");
+    client.subscribe(PREFIX + 'update');
+});
+
+client.on('message', (topic, msg) => {
+    if (topic === PREFIX + 'update') {
+        const d = JSON.parse(msg.toString());
+        updateUI(d);
+    }
+});
+
+// ================= 3. HÀM XỬ LÝ GIAO DIỆN =================
+function updateUI(d) {
+    document.getElementById('soil').innerText = d.soil;
+    document.getElementById('temp').innerText = d.temp;
+    document.getElementById('hum').innerText = d.humidity;
+    document.getElementById('rain').innerText = d.rain;
+    document.getElementById('aiReason').innerText = d.ai_reason;
+    document.getElementById('aiTarget').innerText = d.ai_target;
+    document.getElementById('aiTime').innerText = d.ai_timing;
+    document.getElementById('currentMode').innerText = d.mode;
+
+    const box = document.getElementById('soilBox');
+    if(d.soil < 26) { box.classList.add('emergency'); box.style.borderColor='red'; }
+    else { box.classList.remove('emergency'); box.style.borderColor='#dfe6e9'; }
+
+    const p = document.getElementById('pumpSt');
+    if(d.pump) { p.innerText="ĐANG BƠM"; p.style.color="#00b894"; }
+    else { p.innerText="MÁY BƠM TẮT"; p.style.color="#636e72"; }
+    
+    document.getElementById('warn').innerText = d.warning;
+}
+
+function controlPump(state) {
+    const payload = JSON.stringify({ event: 'user_control', data: { pump: state } });
+    client.publish(PREFIX + 'events', payload);
+}
+
+function changeMode(mode) {
+    const payload = JSON.stringify({ event: 'enter_mode', data: { mode: mode } });
+    client.publish(PREFIX + 'events', payload);
+}
+
+function switchTab(tabId) {
+    document.querySelectorAll('.page-section').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+    document.getElementById(tabId).classList.add('active');
+    event.target.classList.add('active');
+}
+
+// ================= 4. HÀM LẤY LỊCH SỬ TỪ FIREBASE =================
+document.getElementById('dateInput').valueAsDate = new Date(); // Mặc định hôm nay
+
+function loadHistory() {
+    const date = document.getElementById('dateInput').value;
+    const tbody = document.getElementById('histBody');
+    tbody.innerHTML = '<tr><td colspan="3" align="center">Đang tải...</td></tr>';
+
+    // Truy vấn trực tiếp vào path history/YYYY-MM-DD
+    const ref = db.ref('history/' + date);
+    
+    ref.once('value').then((snapshot) => {
+        const data = snapshot.val();
+        tbody.innerHTML = '';
+        
+        if (!data) {
+            tbody.innerHTML = '<tr><td colspan="3" align="center">Không có dữ liệu.</td></tr>';
+            return;
+        }
+
+        // Chuyển object thành array và sắp xếp ngược (mới nhất lên đầu)
+        const items = Object.values(data).sort((a,b) => (a.time < b.time) ? 1 : -1);
+
+        items.forEach(item => {
+            let color = 'bg-blue';
+            if(item.action.includes('ON')) color = 'bg-green';
+            if(item.action.includes('OFF')) color = 'bg-red';
+            
+            const row = `
+                <tr>
+                    <td><b>${item.time}</b></td>
+                    <td><span class="tag ${color}">${item.action}</span></td>
+                    <td>${item.detail} (${item.soil}%)</td>
+                </tr>
+            `;
+            tbody.innerHTML += row;
+        });
+    });
+}
+</script>
+
+</body>
+</html>
