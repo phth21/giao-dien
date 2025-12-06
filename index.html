@@ -33,10 +33,23 @@
   .manual-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
   .p-btn { padding: 30px; border:none; border-radius:15px; font-weight:bold; color:white; font-size:1.3rem; cursor:pointer; width: 100%; }
   .bon { background: #00b894; } .boff { background: #636e72; }
-  #cityPopup { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:999; justify-content:center; align-items:center; }
-  .popup-box { background:white; padding:25px; border-radius:20px; width:300px; text-align:center; max-height:80vh; overflow-y:auto; }
+  
+  /* CSS CHO POPUP LỊCH SỬ VÀ TỈNH THÀNH */
+  .popup-overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:999; justify-content:center; align-items:center; }
+  .popup-box { background:white; padding:25px; border-radius:20px; width:90%; max-width: 600px; text-align:center; max-height:85vh; overflow-y:auto; position: relative;}
   .city-opt { display:block; width:100%; padding:12px; border:1px solid #eee; background:white; margin-bottom:5px; border-radius:8px; cursor:pointer; font-weight:bold; }
   .city-opt:hover { background:#f0f0f0; color:#0984e3; }
+  
+  /* CSS Bảng Lịch sử */
+  table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.9rem; }
+  th, td { padding: 10px; text-align: left; border-bottom: 1px solid #eee; }
+  th { background: #dfe6e9; color: #636e72; position: sticky; top: 0; }
+  .tag { padding: 4px 8px; border-radius: 15px; font-size: 0.75rem; font-weight: bold; display: inline-block; }
+  .tag-on { background: #55efc4; color: #00b894; }
+  .tag-off { background: #fab1a0; color: #d63031; }
+  .tag-ai { background: #74b9ff; color: #0984e3; }
+  .tag-mode { background: #a29bfe; color: #6c5ce7; }
+  
   @keyframes fadeIn { from{opacity:0} to{opacity:1} }
   .emergency { animation: blink 1s infinite; border-color: red !important; } @keyframes blink { 50% { opacity: 0.5; } }
   .hist-btn { display:inline-block; margin-top:10px; background:#6c5ce7; color:white; text-decoration:none; padding:10px 20px; border-radius:8px; font-weight:bold; cursor: pointer;}
@@ -84,7 +97,7 @@
         <div style="margin-top:20px; font-weight:bold; font-size:1.4rem" id="pumpSt">BƠM TẮT</div>
         <div id="warn" style="color:red; font-weight:bold; margin-top:10px; min-height:20px"></div>
         
-        <a href="#" onclick="alert('Tính năng xem lịch sử cần kết nối Server hoặc đọc trực tiếp từ Firebase')" class="hist-btn">📜 Xem Nhật Ký Hoạt Động</a>
+        <div onclick="openHistory()" class="hist-btn">📜 Xem Nhật Ký Hoạt Động</div>
       </div>
 
       <div>
@@ -122,18 +135,43 @@
   </div>
 </div>
 
-<div id="cityPopup" onclick="if(event.target==this) this.style.display='none'">
-    <div class="popup-box">
+<div id="cityPopup" class="popup-overlay" onclick="if(event.target==this) this.style.display='none'">
+    <div class="popup-box" style="width: 300px;">
         <h3>Chọn Tỉnh Thành</h3>
         <div id="cityList"></div>
         <button onclick="document.getElementById('cityPopup').style.display='none'" style="margin-top:15px; background:#ff7675; border:none; padding:10px 20px; color:white; border-radius:10px; cursor:pointer; font-weight:bold">Đóng</button>
     </div>
 </div>
 
+<div id="historyPopup" class="popup-overlay" onclick="if(event.target==this) this.style.display='none'">
+    <div class="popup-box">
+        <h3>📜 Nhật Ký Hoạt Động</h3>
+        <div style="display:flex; gap:10px; justify-content:center; margin-bottom:15px;">
+            <input type="date" id="histDate" style="padding:8px; border-radius:8px; border:1px solid #ddd;">
+            <button onclick="fetchHistory()" style="background:#0984e3; color:white; border:none; padding:8px 15px; border-radius:8px; cursor:pointer;">Xem</button>
+        </div>
+        
+        <div style="max-height: 400px; overflow-y:auto; border:1px solid #eee; border-radius:10px;">
+            <table id="histTable">
+                <thead>
+                    <tr>
+                        <th width="20%">Giờ</th>
+                        <th width="25%">Hành động</th>
+                        <th>Chi tiết</th>
+                        <th width="15%">Đất</th>
+                    </tr>
+                </thead>
+                <tbody id="histBody">
+                    </tbody>
+            </table>
+        </div>
+        
+        <button onclick="document.getElementById('historyPopup').style.display='none'" style="margin-top:20px; background:#ff7675; border:none; padding:10px 20px; color:white; border-radius:10px; cursor:pointer; font-weight:bold">Đóng</button>
+    </div>
+</div>
+
 <script>
-  // ============================================
-  // 1. CẤU HÌNH & KẾT NỐI FIREBASE (Đã thêm)
-  // ============================================
+  // 1. CẤU HÌNH & KẾT NỐI FIREBASE
   const firebaseConfig = {
     apiKey: "AIzaSyD5d7s-pjoQO4N_a_0OsPAhTMxSkNZOkCY",
     authDomain: "tuoicay-30be7.firebaseapp.com",
@@ -144,14 +182,69 @@
     appId: "1:337051698716:web:175874891d781c644c81d9"
   };
 
-  // Khởi tạo Firebase ngay lập tức
   firebase.initializeApp(firebaseConfig);
   const db = firebase.database();
-  console.log("🔥 Đã kết nối Firebase thành công!");
+  console.log("🔥 Firebase Ready");
 
-  // ============================================
-  // 2. LOGIC MQTT & GIAO DIỆN (Giữ nguyên)
-  // ============================================
+  // 2. LOGIC LỊCH SỬ (MỚI)
+  function openHistory() {
+      document.getElementById('historyPopup').style.display = 'flex';
+      // Mặc định chọn ngày hôm nay
+      document.getElementById('histDate').valueAsDate = new Date();
+      fetchHistory();
+  }
+
+  function fetchHistory() {
+      const dateVal = document.getElementById('histDate').value;
+      if(!dateVal) return;
+
+      const tbody = document.getElementById('histBody');
+      tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px">⏳ Đang tải dữ liệu...</td></tr>';
+
+      // Truy vấn trực tiếp Firebase path: history/YYYY-MM-DD
+      db.ref('history/' + dateVal).once('value').then((snapshot) => {
+          tbody.innerHTML = "";
+          const data = snapshot.val();
+
+          if (!data) {
+              tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px; color:#888">📭 Không có dữ liệu ngày này.</td></tr>';
+              return;
+          }
+
+          // Chuyển object thành mảng để sort
+          let arr = [];
+          for(let key in data) {
+              arr.push(data[key]);
+          }
+          // Sắp xếp mới nhất lên đầu (theo time string HH:MM:SS)
+          arr.sort((a, b) => (a.time < b.time) ? 1 : -1);
+
+          arr.forEach(item => {
+              let badgeClass = '';
+              let act = item.action || "";
+              if(act.includes('ON') || act.includes('BẬT')) badgeClass = 'tag-on';
+              else if(act.includes('OFF') || act.includes('TẮT')) badgeClass = 'tag-off';
+              else if(act.includes('AI')) badgeClass = 'tag-ai';
+              else if(act.includes('MODE')) badgeClass = 'tag-mode';
+
+              let row = `
+                <tr>
+                    <td><b>${item.time}</b></td>
+                    <td><span class="tag ${badgeClass}">${item.action}</span></td>
+                    <td style="font-size:0.85rem">${item.detail}</td>
+                    <td>${item.soil}%</td>
+                </tr>
+              `;
+              tbody.innerHTML += row;
+          });
+
+      }).catch((err) => {
+          tbody.innerHTML = `<tr><td colspan="4" style="color:red; text-align:center">Lỗi: ${err.message}</td></tr>`;
+          console.error(err);
+      });
+  }
+
+  // 3. LOGIC MQTT & APP
   const BROKER_URL = 'wss://broker.hivemq.com:8884/mqtt';
   const PREFIX = "thaocute_smartgarden/";
   const client = mqtt.connect(BROKER_URL);
