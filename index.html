@@ -10,6 +10,7 @@
 
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
 <style>
+  /* === GIỮ NGUYÊN CSS TỪ FILE PYTHON CŨ CỦA BẠN === */
   :root { --bg: linear-gradient(135deg, #74b9ff 0%, #a29bfe 100%); }
   body { margin:0; font-family: 'Nunito', sans-serif; background: var(--bg); min-height: 100vh; display: flex; justify-content: center; align-items: center; color: #2d3436; padding: 10px; }
   .screen { position: fixed; top:0; left:0; width:100%; height:100%; z-index: 99; display:flex; flex-direction:column; justify-content:center; align-items:center; background: rgba(255,255,255,0.99); transition: 0.3s; }
@@ -31,19 +32,24 @@
   .manual-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
   .p-btn { padding: 30px; border:none; border-radius:15px; font-weight:bold; color:white; font-size:1.3rem; cursor:pointer; width: 100%; }
   .bon { background: #00b894; } .boff { background: #636e72; }
-  /* Popup City & History */
+  
+  /* Thêm CSS cho Popup Lịch Sử (Mới) */
   #cityPopup, #historyPopup { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:999; justify-content:center; align-items:center; }
   .popup-box { background:white; padding:25px; border-radius:20px; width:350px; text-align:center; max-height:80vh; overflow-y:auto; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
   .city-opt { display:block; width:100%; padding:12px; border:1px solid #eee; background:white; margin-bottom:5px; border-radius:8px; cursor:pointer; font-weight:bold; }
   .city-opt:hover { background:#f0f0f0; color:#0984e3; }
   @keyframes fadeIn { from{opacity:0} to{opacity:1} }
   .emergency { animation: blink 1s infinite; border-color: red !important; } @keyframes blink { 50% { opacity: 0.5; } }
-  .hist-btn { display:inline-block; margin-top:10px; background:#6c5ce7; color:white; padding:10px 20px; border-radius:8px; font-weight:bold; border:none; cursor: pointer; }
-  /* Table History */
+  
+  /* Nút xem lịch sử đẹp hơn */
+  .hist-btn { display:inline-block; margin-top:10px; background:#6c5ce7; color:white; padding:10px 20px; border-radius:8px; font-weight:bold; border:none; cursor: pointer; text-decoration: none; }
+  
+  /* Bảng lịch sử trong Popup */
   .hist-table { width: 100%; font-size: 0.85rem; border-collapse: collapse; margin-top:10px; text-align: left; }
   .hist-table th, .hist-table td { padding: 8px; border-bottom: 1px solid #eee; }
   .tag { padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; color: white; }
   .bg-on { background: #00b894; } .bg-off { background: #d63031; } .bg-ai { background: #0984e3; }
+  
   @media (max-width: 800px) { .layout { grid-template-columns: 1fr; } .mode-container { flex-direction:column; } }
 </style>
 </head>
@@ -150,6 +156,7 @@
 
 <script>
   // --- 1. FIREBASE CONFIG ---
+  // Thay thế bằng Config của bạn nếu cần
   const firebaseConfig = {
     apiKey: "AIzaSyD5d7s-pjoQO4N_a_0OsPAhTMxSkNZOkCY",
     authDomain: "tuoicay-30be7.firebaseapp.com",
@@ -177,10 +184,12 @@
       let d = JSON.parse(message.toString());
       currentRegion = d.region; 
       
+      // Chuyển màn hình
       document.getElementById('screenRegion').style.display = (d.step === 0) ? 'flex' : 'none';
       document.getElementById('screenMode').style.display   = (d.step === 1) ? 'flex' : 'none';
       document.getElementById('mainApp').style.display      = (d.step === 2) ? 'block' : 'none';
 
+      // Cập nhật dữ liệu
       document.getElementById('loc').innerText = d.location;
       document.getElementById('temp').innerText = d.temp + "°";
       document.getElementById('hum').innerText = d.humidity + "%";
