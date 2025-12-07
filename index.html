@@ -40,15 +40,35 @@
   .p-btn { padding: 30px; border:none; border-radius:15px; font-weight:bold; color:white; font-size:1.3rem; cursor:pointer; width: 100%; }
   .bon { background: #00b894; } .boff { background: #636e72; }
 
+  /* --- POPUP STYLES --- */
   #cityPopup, #historyPopup { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:999; justify-content:center; align-items:center; }
-  .popup-box { background:white; padding:25px; border-radius:20px; width:300px; text-align:center; max-height:80vh; overflow-y:auto; }
-  .city-opt { display:block; width:100%; padding:12px; border:1px solid #eee; background:white; margin-bottom:5px; border-radius:8px; cursor:pointer; font-weight:bold; }
-  .city-opt:hover { background:#f0f0f0; color:#0984e3; }
+  .popup-box { background:white; padding:25px; border-radius:20px; width:300px; text-align:center; max-height:80vh; overflow-y:auto; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
   
-  .hist-btn { display:inline-block; margin-top:10px; background:#6c5ce7; color:white; padding:10px 20px; border-radius:8px; font-weight:bold; border:none; cursor: pointer; }
-  .hist-table { width: 100%; font-size: 0.85rem; border-collapse: collapse; margin-top:10px; text-align: left; }
-  .hist-table th, .hist-table td { padding: 8px; border-bottom: 1px solid #eee; }
+  .city-opt { display:block; width:100%; padding:12px; border:1px solid #eee; background:white; margin-bottom:5px; border-radius:8px; cursor:pointer; font-weight:bold; transition: 0.2s; }
+  .city-opt:hover { background:#f0f0f0; color:#0984e3; transform: translateX(5px); }
   
+  /* --- HISTORY STYLES (NÂNG CẤP) --- */
+  .hist-btn { display:inline-block; margin-top:10px; background:#6c5ce7; color:white; padding:10px 20px; border-radius:8px; font-weight:bold; border:none; cursor: pointer; box-shadow: 0 4px 10px rgba(108, 92, 231, 0.3); transition: 0.2s; }
+  .hist-btn:hover { background:#5649c0; transform: translateY(-2px); }
+
+  /* Ô chọn ngày đẹp hơn */
+  #dateInput { padding: 10px; border: 2px solid #dfe6e9; border-radius: 8px; font-family: 'Nunito', sans-serif; font-weight: bold; color: #2d3436; width: 100%; box-sizing: border-box; margin-bottom: 15px; }
+  #dateInput:focus { border-color: #0984e3; outline: none; }
+
+  /* Bảng lịch sử */
+  .table-container { max-height: 350px; overflow-y: auto; border-radius: 8px; border: 1px solid #eee; }
+  .hist-table { width: 100%; font-size: 0.9rem; border-collapse: collapse; text-align: left; }
+  .hist-table th { position: sticky; top: 0; background: #f1f2f6; color: #636e72; padding: 12px; font-weight: 800; z-index: 1; }
+  .hist-table td { padding: 12px; border-bottom: 1px solid #eee; color: #2d3436; vertical-align: middle; }
+  .hist-table tr:hover { background-color: #f8f9fa; }
+
+  /* Badges (Nhãn màu) */
+  .badge { padding: 5px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 800; display: inline-block; min-width: 60px; text-align: center; }
+  .bg-green { background: #e3f9e5; color: #00b894; border: 1px solid #00b894; } /* Bật bơm */
+  .bg-red { background: #ffebeb; color: #d63031; border: 1px solid #d63031; }   /* Tắt bơm */
+  .bg-blue { background: #e3f2fd; color: #0984e3; border: 1px solid #0984e3; }  /* AI */
+  .bg-purple { background: #f3e5f5; color: #9c27b0; border: 1px solid #9c27b0; } /* Chế độ */
+
   @keyframes fadeIn { from{opacity:0} to{opacity:1} }
   .emergency { animation: blink 1s infinite; border-color: red !important; } @keyframes blink { 50% { opacity: 0.5; } }
   @media (max-width: 800px) { .layout { grid-template-columns: 1fr; } .mode-container { flex-direction:column; } }
@@ -141,16 +161,26 @@
 </div>
 
 <div id="historyPopup" onclick="if(event.target==this) this.style.display='none'">
-    <div class="popup-box" style="width: 500px; max-width: 90%;">
-        <h3>📜 Nhật Ký Hoạt Động</h3>
-        <input type="date" id="dateInput" style="padding:5px; margin-bottom:10px" onchange="loadHistory()">
-        <div style="max-height:300px; overflow-y:auto">
+    <div class="popup-box" style="width: 600px; max-width: 95%;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px">
+            <h3 style="margin:0">📜 Nhật Ký</h3>
+            <button onclick="document.getElementById('historyPopup').style.display='none'" style="background:none; border:none; font-size:1.5rem; cursor:pointer">✖</button>
+        </div>
+        
+        <input type="date" id="dateInput" onchange="loadHistory()">
+        
+        <div class="table-container">
             <table class="hist-table">
-                <thead><tr><th>Giờ</th><th>Hành động</th><th>Chi tiết</th></tr></thead>
+                <thead>
+                    <tr>
+                        <th width="20%">Giờ</th>
+                        <th width="25%">Hành động</th>
+                        <th>Chi tiết</th>
+                    </tr>
+                </thead>
                 <tbody id="histBody"></tbody>
             </table>
         </div>
-        <button onclick="document.getElementById('historyPopup').style.display='none'" style="margin-top:15px; background:#ff7675; border:none; padding:10px 20px; color:white; border-radius:10px; cursor:pointer; font-weight:bold">Đóng</button>
     </div>
 </div>
 
@@ -262,22 +292,34 @@
   function loadHistory() {
       const date = document.getElementById('dateInput').value;
       const tbody = document.getElementById('histBody');
-      tbody.innerHTML = '<tr><td colspan="3">Đang tải...</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding:20px; color:#888">⏳ Đang tải dữ liệu...</td></tr>';
       
       db.ref('history/' + date).once('value').then(snapshot => {
           const data = snapshot.val();
           tbody.innerHTML = '';
-          if(!data) { tbody.innerHTML = '<tr><td colspan="3">Chưa có dữ liệu</td></tr>'; return; }
+          if(!data) { 
+              tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding:20px">📭 Không có dữ liệu hôm nay</td></tr>'; 
+              return; 
+          }
           
           const items = Object.values(data).sort((a,b) => (a.time < b.time) ? 1 : -1);
           items.forEach(item => {
-              let cls = '';
-              if(item.action.includes('ON')) cls='style="color:green"';
-              if(item.action.includes('OFF')) cls='style="color:red"';
-              tbody.innerHTML += `<tr>
-                <td><b>${item.time}</b></td>
-                <td><b ${cls}>${item.action}</b></td>
-                <td>${item.detail} (${item.soil}%)</td>
+              let badgeClass = 'bg-blue'; // Mặc định (AI)
+              let label = item.action;
+
+              // Logic chọn màu Badge
+              if(item.action.includes('ON') || item.action.includes('BẬT')) { badgeClass = 'bg-green'; }
+              else if(item.action.includes('OFF') || item.action.includes('TẮT')) { badgeClass = 'bg-red'; }
+              else if(item.action.includes('MODE')) { badgeClass = 'bg-purple'; }
+
+              tbody.innerHTML += `
+              <tr>
+                <td><span style="font-weight:700; color:#555">${item.time}</span></td>
+                <td><span class="badge ${badgeClass}">${label}</span></td>
+                <td>
+                    <div style="font-weight:bold; color:#2d3436">${item.detail}</div>
+                    <div style="font-size:0.8rem; color:#888">Độ ẩm đất: ${item.soil}%</div>
+                </td>
               </tr>`;
           });
       });
