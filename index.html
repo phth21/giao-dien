@@ -3,232 +3,218 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Smart Garden Ultimate</title>
-
+<title>Smart Garden IoT - Cloud Version</title>
 <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
-
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
 <style>
   :root { --bg: linear-gradient(135deg, #74b9ff 0%, #a29bfe 100%); }
-  body { margin:0; font-family: 'Nunito', sans-serif; background: var(--bg); min-height: 100vh; display: flex; justify-content: center; align-items: center; color: #2d3436; padding: 10px; }
-  .screen { position: fixed; top:0; left:0; width:100%; height:100%; z-index: 99; display:flex; flex-direction:column; justify-content:center; align-items:center; background: rgba(255,255,255,0.99); transition: 0.3s; }
-  .btn { padding: 18px 40px; border:none; border-radius:15px; font-weight:bold; cursor:pointer; color:white; margin: 10px; font-size: 1.2rem; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
-  .n { background: #6c5ce7; } .c { background: #0984e3; } .s { background: #d63031; }
-  #mainApp { display: none; width: 100%; max-width: 1000px; }
-  .card { background: rgba(255,255,255,0.96); border-radius: 30px; padding: 30px; box-shadow: 0 20px 60px rgba(0,0,0,0.2); position: relative; }
-  .back-btn { position: absolute; top: 20px; left: 20px; background: #ff7675; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; z-index: 10; }
-  .layout { display: grid; grid-template-columns: 300px 1fr; gap: 40px; margin-top: 40px; }
-  .soil-circle { width: 240px; height: 240px; border-radius: 50%; border: 15px solid #dfe6e9; display: flex; flex-direction: column; justify-content: center; align-items: center; margin: 0 auto; background: white; transition: border-color 0.3s; }
-  .soil-num { font-size: 4.5rem; font-weight: 900; color: #00b894; line-height: 1; }
-  .stats-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-bottom: 25px; }
-  .stat-box { background: #f1f2f6; padding: 15px; border-radius: 12px; text-align: center; font-weight: bold; color: #555; }
-  .stat-val { display: block; font-size: 1.3rem; color: #0984e3; }
-  .mode-container { display: flex; gap: 20px; }
-  .mode-card { background:white; padding:40px; border-radius:20px; cursor:pointer; text-align:center; box-shadow:0 10px 30px rgba(0,0,0,0.1); width:200px; border:3px solid transparent; }
-  .mode-card:hover { border-color: #00b894; transform: translateY(-5px); }
-  #panelAuto, #panelManual { display: none; animation: fadeIn 0.5s; }
-  .manual-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-  .p-btn { padding: 30px; border:none; border-radius:15px; font-weight:bold; color:white; font-size:1.3rem; cursor:pointer; width: 100%; }
+  body { margin:0; font-family: 'Nunito', sans-serif; background: var(--bg); min-height: 100vh; padding: 10px; color: #2d3436; }
+  .container { max-width: 1000px; margin: 0 auto; background: rgba(255,255,255,0.95); border-radius: 20px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+  
+  /* Tabs Navigation */
+  .tabs { display: flex; justify-content: center; margin-bottom: 20px; border-bottom: 2px solid #eee; }
+  .tab-btn { padding: 15px 30px; border: none; background: none; font-size: 1.2rem; font-weight: bold; cursor: pointer; color: #b2bec3; }
+  .tab-btn.active { color: #0984e3; border-bottom: 4px solid #0984e3; }
+  
+  .page-section { display: none; animation: fadeIn 0.5s; }
+  .page-section.active { display: block; }
+
+  /* Dashboard Styles */
+  .soil-circle { width: 200px; height: 200px; border-radius: 50%; border: 15px solid #dfe6e9; display: flex; flex-direction: column; justify-content: center; align-items: center; margin: 0 auto; background: white; }
+  .soil-num { font-size: 3.5rem; font-weight: 900; color: #00b894; }
+  .stats-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin: 20px 0; }
+  .stat-box { background: #f1f2f6; padding: 10px; border-radius: 10px; text-align: center; font-weight: bold; }
+  .btn { padding: 15px; width: 100%; border: none; border-radius: 10px; font-weight: bold; color: white; cursor: pointer; font-size: 1rem; margin-top: 5px; }
   .bon { background: #00b894; } .boff { background: #636e72; }
-  #cityPopup { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:999; justify-content:center; align-items:center; }
-  .popup-box { background:white; padding:25px; border-radius:20px; width:300px; text-align:center; max-height:80vh; overflow-y:auto; }
-  .city-opt { display:block; width:100%; padding:12px; border:1px solid #eee; background:white; margin-bottom:5px; border-radius:8px; cursor:pointer; font-weight:bold; }
-  .city-opt:hover { background:#f0f0f0; color:#0984e3; }
+  
+  /* History Styles */
+  table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+  th, td { padding: 10px; text-align: left; border-bottom: 1px solid #eee; font-size: 0.9rem; }
+  .tag { padding: 3px 8px; border-radius: 10px; font-size: 0.75rem; color: white; }
+  .bg-blue { background: #0984e3; } .bg-green { background: #00b894; } .bg-red { background: #d63031; }
+
   @keyframes fadeIn { from{opacity:0} to{opacity:1} }
-  .emergency { animation: blink 1s infinite; border-color: red !important; } @keyframes blink { 50% { opacity: 0.5; } }
-  .hist-btn { display:inline-block; margin-top:10px; background:#6c5ce7; color:white; text-decoration:none; padding:10px 20px; border-radius:8px; font-weight:bold; cursor: pointer;}
-  @media (max-width: 800px) { .layout { grid-template-columns: 1fr; } .mode-container { flex-direction:column; } }
+  .emergency { border-color: red !important; }
 </style>
 </head>
 <body>
 
-<div id="screenRegion" class="screen">
-  <h1>🌱 Smart Garden</h1>
-  <p>Bước 1: Chọn khu vực của bạn</p>
-  <div>
-    <button class="btn n" onclick="emit('select_region', {region:'NORTH'})">Miền Bắc</button>
-    <button class="btn c" onclick="emit('select_region', {region:'CENTRAL'})">Miền Trung</button>
-    <button class="btn s" onclick="emit('select_region', {region:'SOUTH'})">Miền Nam</button>
-  </div>
-</div>
-
-<div id="screenMode" class="screen" style="display:none">
-  <h1>Chọn Chế Độ Vận Hành</h1>
-  <p>Bước 2: Bạn muốn tưới thế nào?</p>
-  <div class="mode-container">
-    <div class="mode-card" onclick="emit('enter_mode', {mode:'AUTO'})">
-        <div style="font-size:3rem">🤖</div>
-        <h3>AI AUTO</h3>
-        <p style="color:#666; font-size:0.9rem">Tự động theo thời tiết</p>
-    </div>
-    <div class="mode-card" onclick="emit('enter_mode', {mode:'MANUAL'})">
-        <div style="font-size:3rem">🎮</div>
-        <h3>THỦ CÔNG</h3>
-        <p style="color:#666; font-size:0.9rem">Bạn tự điều khiển</p>
-    </div>
-  </div>
-</div>
-
-<div id="mainApp">
-  <div class="card">
-    <button class="back-btn" onclick="exit()">⬅ Thoát ra Menu</button>
+<div class="container">
+    <h2 style="text-align:center; margin-top:0">🌱 Smart Garden IoT</h2>
     
-    <div class="layout">
-      <div style="text-align:center">
-        <div class="soil-circle" id="soilBox">
-          <span class="soil-num" id="soil">--</span><span>ĐỘ ẨM %</span>
-        </div>
-        <div style="margin-top:20px; font-weight:bold; font-size:1.4rem" id="pumpSt">BƠM TẮT</div>
-        <div id="warn" style="color:red; font-weight:bold; margin-top:10px; min-height:20px"></div>
-        
-        <a href="#" onclick="alert('Tính năng xem lịch sử cần kết nối Server hoặc đọc trực tiếp từ Firebase')" class="hist-btn">📜 Xem Nhật Ký Hoạt Động</a>
-      </div>
+    <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('dashboard')">Điều Khiển</button>
+        <button class="tab-btn" onclick="switchTab('history')">Lịch Sử</button>
+    </div>
 
-      <div>
-        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:15px">
-             <h2 style="margin:0" id="loc">...</h2>
-             <button onclick="openCityPopup()" style="background:#eee; border:none; padding:8px 15px; border-radius:20px; cursor:pointer; font-weight:bold; color:#555">✎ Đổi địa điểm</button>
+    <div id="dashboard" class="page-section active">
+        <div style="text-align:center; margin-bottom: 20px;">
+            <div class="soil-circle" id="soilBox">
+                <span class="soil-num" id="soil">--</span><span>%</span>
+            </div>
+            <h3 id="pumpSt" style="color:#636e72">MÁY BƠM TẮT</h3>
+            <div id="warn" style="color:red; font-weight:bold; min-height:20px"></div>
         </div>
 
         <div class="stats-grid">
-           <div class="stat-box"><span class="stat-val" id="temp">--</span>Nhiệt độ</div>
-           <div class="stat-box"><span class="stat-val" id="hum">--</span>Độ ẩm</div>
-           <div class="stat-box"><span class="stat-val" id="rain">--</span>Mưa</div>
+            <div class="stat-box">🌡️ <span id="temp">--</span>°C</div>
+            <div class="stat-box">💧 <span id="hum">--</span>%</div>
+            <div class="stat-box">🌧️ <span id="rain">--</span>mm</div>
         </div>
 
-        <div id="panelAuto">
-           <div style="background:#e3f2fd; padding:25px; border-radius:20px; border-left:6px solid #0984e3">
-               <h3>🤖 AI Đang Làm Việc</h3>
-               <p>🕒 <b>Khi nào tưới:</b> <span id="aiTime" style="color:#d63031; font-weight:bold">...</span></p>
-               <p>🎯 <b>Ngưỡng dừng:</b> <span id="aiTarget" style="font-weight:bold; color:#2d3436">...</span> (Tự ngắt khi đạt)</p>
-               <hr>
-               <p>💡 <i><span id="aiReason">...</span></i></p>
-           </div>
+        <div style="background:#e3f2fd; padding:15px; border-radius:10px; margin-bottom:20px">
+            <b>🤖 AI Status:</b> <span id="aiReason">Đang chờ dữ liệu...</span><br>
+            <small>Mục tiêu: <span id="aiTarget">--</span> | Thời gian: <span id="aiTime">--</span></small>
         </div>
 
-        <div id="panelManual">
-           <div class="manual-grid">
-              <button class="p-btn bon" onclick="pump(true)">BẬT BƠM</button>
-              <button class="p-btn boff" onclick="pump(false)">TẮT BƠM</button>
-           </div>
-           <p style="text-align:center; color:#888; margin-top:20px">⚠️ Bạn đang điều khiển trực tiếp.</p>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px">
+            <button class="btn bon" onclick="controlPump(true)">BẬT BƠM</button>
+            <button class="btn boff" onclick="controlPump(false)">TẮT BƠM</button>
         </div>
-
-      </div>
+        
+        <div style="margin-top:15px; text-align:center">
+             <button onclick="changeMode('AUTO')" style="background:#6c5ce7; border:none; color:white; padding:10px; border-radius:5px; cursor:pointer">Chế độ AUTO</button>
+             <button onclick="changeMode('MANUAL')" style="background:#fdcb6e; border:none; color:black; padding:10px; border-radius:5px; cursor:pointer">Chế độ MANUAL</button>
+             <p>Mode hiện tại: <b id="currentMode">...</b></p>
+        </div>
     </div>
-  </div>
-</div>
 
-<div id="cityPopup" onclick="if(event.target==this) this.style.display='none'">
-    <div class="popup-box">
-        <h3>Chọn Tỉnh Thành</h3>
-        <div id="cityList"></div>
-        <button onclick="document.getElementById('cityPopup').style.display='none'" style="margin-top:15px; background:#ff7675; border:none; padding:10px 20px; color:white; border-radius:10px; cursor:pointer; font-weight:bold">Đóng</button>
+    <div id="history" class="page-section">
+        <div style="display:flex; justify-content:center; gap:10px">
+            <input type="date" id="dateInput" style="padding:8px; border-radius:5px; border:1px solid #ccc">
+            <button onclick="loadHistory()" style="padding:8px 15px; background:#0984e3; color:white; border:none; border-radius:5px; cursor:pointer">Xem</button>
+        </div>
+        <table>
+            <thead>
+                <tr style="background:#eee">
+                    <th>Giờ</th>
+                    <th>Hành động</th>
+                    <th>Chi tiết</th>
+                </tr>
+            </thead>
+            <tbody id="histBody">
+                <tr><td colspan="3" align="center">Chọn ngày để xem...</td></tr>
+            </tbody>
+        </table>
     </div>
 </div>
 
 <script>
-  // ============================================
-  // 1. CẤU HÌNH & KẾT NỐI FIREBASE (Đã thêm)
-  // ============================================
-  const firebaseConfig = {
-    apiKey: "AIzaSyD5d7s-pjoQO4N_a_0OsPAhTMxSkNZOkCY",
-    authDomain: "tuoicay-30be7.firebaseapp.com",
-    databaseURL: "https://tuoicay-30be7-default-rtdb.asia-southeast1.firebasedatabase.app",
-    projectId: "tuoicay-30be7",
-    storageBucket: "tuoicay-30be7.firebasestorage.app",
-    messagingSenderId: "337051698716",
-    appId: "1:337051698716:web:175874891d781c644c81d9"
-  };
+// ================= 1. CẤU HÌNH FIREBASE =================
+// ⚠️ THAY ĐỔI ĐOẠN NÀY BẰNG CẤU HÌNH CỦA BẠN (Lấy ở Bước 1)
+const firebaseConfig = {
+  apiKey: "AIzaSyD5d7s-pjoQO4N_a_0OsPAhTMxSkNZOkCY",
+  authDomain: "tuoicay-30be7.firebaseapp.com",
+  databaseURL: "https://tuoicay-30be7-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "tuoicay-30be7",
+  storageBucket: "tuoicay-30be7.firebasestorage.app",
+  messagingSenderId: "337051698716",
+  appId: "1:337051698716:web:175874891d781c644c81d9"
+};
 
-  // Khởi tạo Firebase ngay lập tức
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.database();
-  console.log("🔥 Đã kết nối Firebase thành công!");
+// Khởi tạo Firebase
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
 
-  // ============================================
-  // 2. LOGIC MQTT & GIAO DIỆN (Giữ nguyên)
-  // ============================================
-  const BROKER_URL = 'wss://broker.hivemq.com:8884/mqtt';
-  const PREFIX = "thaocute_smartgarden/";
-  const client = mqtt.connect(BROKER_URL);
+// ================= 2. KẾT NỐI MQTT (HiveMQ) =================
+const BROKER = 'wss://broker.hivemq.com:8884/mqtt';
+const PREFIX = "thaocute_smartgarden/";
+const client = mqtt.connect(BROKER);
 
-  client.on('connect', function () {
-    console.log('Connected to MQTT');
+client.on('connect', () => {
+    console.log("MQTT Connected");
     client.subscribe(PREFIX + 'update');
-  });
+});
 
-  client.on('message', function (topic, message) {
+client.on('message', (topic, msg) => {
     if (topic === PREFIX + 'update') {
-      let d = JSON.parse(message.toString());
-      currentRegion = d.region; 
-      
-      document.getElementById('screenRegion').style.display = (d.step === 0) ? 'flex' : 'none';
-      document.getElementById('screenMode').style.display   = (d.step === 1) ? 'flex' : 'none';
-      document.getElementById('mainApp').style.display      = (d.step === 2) ? 'block' : 'none';
-
-      document.getElementById('loc').innerText = d.location;
-      document.getElementById('temp').innerText = d.temp + "°";
-      document.getElementById('hum').innerText = d.humidity + "%";
-      document.getElementById('rain').innerText = d.rain;
-      document.getElementById('soil').innerText = d.soil;
-      document.getElementById('warn').innerText = d.warning;
-
-      if (d.step === 2) {
-          document.getElementById('panelAuto').style.display = (d.mode === 'AUTO') ? 'block' : 'none';
-          document.getElementById('panelManual').style.display = (d.mode === 'MANUAL') ? 'block' : 'none';
-          if(d.mode === 'AUTO') {
-             document.getElementById('aiTime').innerText = d.ai_timing;
-             document.getElementById('aiTarget').innerText = d.ai_target;
-             document.getElementById('aiReason').innerText = d.ai_reason;
-          }
-      }
-
-      const box = document.getElementById('soilBox');
-      if(d.soil < 26) { box.classList.add('emergency'); box.style.borderColor='red'; }
-      else { box.classList.remove('emergency'); box.style.borderColor='#dfe6e9'; }
-
-      const pst = document.getElementById('pumpSt');
-      if(d.pump) { pst.innerText = "ĐANG BƠM..."; pst.style.color="#00b894"; }
-      else { pst.innerText = "MÁY BƠM TẮT"; pst.style.color="#636e72"; }
+        const d = JSON.parse(msg.toString());
+        updateUI(d);
     }
-  });
+});
 
-  const REGIONAL_CITIES = {
-    'NORTH': ["Hà Nội", "Hải Phòng", "Bắc Ninh", "Hưng Yên", "Nam Định", "Thái Bình", "Ninh Bình", "Lào Cai"],
-    'CENTRAL': ["Đà Nẵng", "Huế", "Nha Trang", "Vinh", "Quy Nhơn", "Thanh Hóa", "Đà Lạt"],
-    'SOUTH': ["TP.HCM", "Cần Thơ", "Vũng Tàu", "Bình Dương", "Đồng Nai", "Long An", "Cà Mau"]
-  };
-  let currentRegion = 'NORTH';
+// ================= 3. HÀM XỬ LÝ GIAO DIỆN =================
+function updateUI(d) {
+    document.getElementById('soil').innerText = d.soil;
+    document.getElementById('temp').innerText = d.temp;
+    document.getElementById('hum').innerText = d.humidity;
+    document.getElementById('rain').innerText = d.rain;
+    document.getElementById('aiReason').innerText = d.ai_reason;
+    document.getElementById('aiTarget').innerText = d.ai_target;
+    document.getElementById('aiTime').innerText = d.ai_timing;
+    document.getElementById('currentMode').innerText = d.mode;
 
-  function exit() {
-     if(confirm("Thoát chế độ này? Bơm sẽ TẮT.")) {
-       emit('exit_dashboard', {});
-     }
-  }
+    const box = document.getElementById('soilBox');
+    if(d.soil < 26) { box.classList.add('emergency'); box.style.borderColor='red'; }
+    else { box.classList.remove('emergency'); box.style.borderColor='#dfe6e9'; }
 
-  function openCityPopup() {
-     const list = document.getElementById('cityList');
-     list.innerHTML = "";
-     const cities = REGIONAL_CITIES[currentRegion] || [];
-     cities.forEach(c => {
-         let btn = document.createElement('button');
-         btn.className = 'city-opt';
-         btn.innerText = c;
-         btn.onclick = () => {
-             emit('set_city', {city: c});
-             document.getElementById('cityPopup').style.display = 'none';
-         };
-         list.appendChild(btn);
-     });
-     document.getElementById('cityPopup').style.display = 'flex';
-  }
+    const p = document.getElementById('pumpSt');
+    if(d.pump) { p.innerText="ĐANG BƠM"; p.style.color="#00b894"; }
+    else { p.innerText="MÁY BƠM TẮT"; p.style.color="#636e72"; }
+    
+    document.getElementById('warn').innerText = d.warning;
+}
 
-  function pump(st) { emit('user_control', {pump: st}); }
-  function emit(ev, d) { client.publish(PREFIX + 'events', JSON.stringify({event: ev, data: d})); }
+function controlPump(state) {
+    const payload = JSON.stringify({ event: 'user_control', data: { pump: state } });
+    client.publish(PREFIX + 'events', payload);
+}
+
+function changeMode(mode) {
+    const payload = JSON.stringify({ event: 'enter_mode', data: { mode: mode } });
+    client.publish(PREFIX + 'events', payload);
+}
+
+function switchTab(tabId) {
+    document.querySelectorAll('.page-section').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+    document.getElementById(tabId).classList.add('active');
+    event.target.classList.add('active');
+}
+
+// ================= 4. HÀM LẤY LỊCH SỬ TỪ FIREBASE =================
+document.getElementById('dateInput').valueAsDate = new Date(); // Mặc định hôm nay
+
+function loadHistory() {
+    const date = document.getElementById('dateInput').value;
+    const tbody = document.getElementById('histBody');
+    tbody.innerHTML = '<tr><td colspan="3" align="center">Đang tải...</td></tr>';
+
+    // Truy vấn trực tiếp vào path history/YYYY-MM-DD
+    const ref = db.ref('history/' + date);
+    
+    ref.once('value').then((snapshot) => {
+        const data = snapshot.val();
+        tbody.innerHTML = '';
+        
+        if (!data) {
+            tbody.innerHTML = '<tr><td colspan="3" align="center">Không có dữ liệu.</td></tr>';
+            return;
+        }
+
+        // Chuyển object thành array và sắp xếp ngược (mới nhất lên đầu)
+        const items = Object.values(data).sort((a,b) => (a.time < b.time) ? 1 : -1);
+
+        items.forEach(item => {
+            let color = 'bg-blue';
+            if(item.action.includes('ON')) color = 'bg-green';
+            if(item.action.includes('OFF')) color = 'bg-red';
+            
+            const row = `
+                <tr>
+                    <td><b>${item.time}</b></td>
+                    <td><span class="tag ${color}">${item.action}</span></td>
+                    <td>${item.detail} (${item.soil}%)</td>
+                </tr>
+            `;
+            tbody.innerHTML += row;
+        });
+    });
+}
 </script>
+
 </body>
 </html>
