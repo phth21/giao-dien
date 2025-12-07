@@ -3,53 +3,54 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Smart Garden Ultimate (Cloud)</title>
+<title>Smart Garden Ultimate (GitHub)</title>
 <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
 <style>
-  /* === GIỮ NGUYÊN CSS TỪ FILE PYTHON CŨ CỦA BẠN === */
   :root { --bg: linear-gradient(135deg, #74b9ff 0%, #a29bfe 100%); }
   body { margin:0; font-family: 'Nunito', sans-serif; background: var(--bg); min-height: 100vh; display: flex; justify-content: center; align-items: center; color: #2d3436; padding: 10px; }
+  
   .screen { position: fixed; top:0; left:0; width:100%; height:100%; z-index: 99; display:flex; flex-direction:column; justify-content:center; align-items:center; background: rgba(255,255,255,0.99); transition: 0.3s; }
+  
   .btn { padding: 18px 40px; border:none; border-radius:15px; font-weight:bold; cursor:pointer; color:white; margin: 10px; font-size: 1.2rem; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
   .n { background: #6c5ce7; } .c { background: #0984e3; } .s { background: #d63031; }
+
   #mainApp { display: none; width: 100%; max-width: 1000px; }
   .card { background: rgba(255,255,255,0.96); border-radius: 30px; padding: 30px; box-shadow: 0 20px 60px rgba(0,0,0,0.2); position: relative; }
   .back-btn { position: absolute; top: 20px; left: 20px; background: #ff7675; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; z-index: 10; }
+
   .layout { display: grid; grid-template-columns: 300px 1fr; gap: 40px; margin-top: 40px; }
+  
   .soil-circle { width: 240px; height: 240px; border-radius: 50%; border: 15px solid #dfe6e9; display: flex; flex-direction: column; justify-content: center; align-items: center; margin: 0 auto; background: white; transition: border-color 0.3s; }
   .soil-num { font-size: 4.5rem; font-weight: 900; color: #00b894; line-height: 1; }
+
   .stats-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-bottom: 25px; }
   .stat-box { background: #f1f2f6; padding: 15px; border-radius: 12px; text-align: center; font-weight: bold; color: #555; }
   .stat-val { display: block; font-size: 1.3rem; color: #0984e3; }
+
   .mode-container { display: flex; gap: 20px; }
   .mode-card { background:white; padding:40px; border-radius:20px; cursor:pointer; text-align:center; box-shadow:0 10px 30px rgba(0,0,0,0.1); width:200px; border:3px solid transparent; }
   .mode-card:hover { border-color: #00b894; transform: translateY(-5px); }
+  
   #panelAuto, #panelManual { display: none; animation: fadeIn 0.5s; }
   .manual-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
   .p-btn { padding: 30px; border:none; border-radius:15px; font-weight:bold; color:white; font-size:1.3rem; cursor:pointer; width: 100%; }
   .bon { background: #00b894; } .boff { background: #636e72; }
-  
-  /* Thêm CSS cho Popup Lịch Sử (Mới) */
+
   #cityPopup, #historyPopup { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:999; justify-content:center; align-items:center; }
-  .popup-box { background:white; padding:25px; border-radius:20px; width:350px; text-align:center; max-height:80vh; overflow-y:auto; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+  .popup-box { background:white; padding:25px; border-radius:20px; width:300px; text-align:center; max-height:80vh; overflow-y:auto; }
   .city-opt { display:block; width:100%; padding:12px; border:1px solid #eee; background:white; margin-bottom:5px; border-radius:8px; cursor:pointer; font-weight:bold; }
   .city-opt:hover { background:#f0f0f0; color:#0984e3; }
-  @keyframes fadeIn { from{opacity:0} to{opacity:1} }
-  .emergency { animation: blink 1s infinite; border-color: red !important; } @keyframes blink { 50% { opacity: 0.5; } }
   
-  /* Nút xem lịch sử đẹp hơn */
-  .hist-btn { display:inline-block; margin-top:10px; background:#6c5ce7; color:white; padding:10px 20px; border-radius:8px; font-weight:bold; border:none; cursor: pointer; text-decoration: none; }
-  
-  /* Bảng lịch sử trong Popup */
+  .hist-btn { display:inline-block; margin-top:10px; background:#6c5ce7; color:white; padding:10px 20px; border-radius:8px; font-weight:bold; border:none; cursor: pointer; }
   .hist-table { width: 100%; font-size: 0.85rem; border-collapse: collapse; margin-top:10px; text-align: left; }
   .hist-table th, .hist-table td { padding: 8px; border-bottom: 1px solid #eee; }
-  .tag { padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; color: white; }
-  .bg-on { background: #00b894; } .bg-off { background: #d63031; } .bg-ai { background: #0984e3; }
   
+  @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+  .emergency { animation: blink 1s infinite; border-color: red !important; } @keyframes blink { 50% { opacity: 0.5; } }
   @media (max-width: 800px) { .layout { grid-template-columns: 1fr; } .mode-container { flex-direction:column; } }
 </style>
 </head>
@@ -93,7 +94,6 @@
         </div>
         <div style="margin-top:20px; font-weight:bold; font-size:1.4rem" id="pumpSt">BƠM TẮT</div>
         <div id="warn" style="color:red; font-weight:bold; margin-top:10px; min-height:20px"></div>
-        
         <button onclick="openHistory()" class="hist-btn">📜 Xem Nhật Ký</button>
       </div>
 
@@ -155,8 +155,7 @@
 </div>
 
 <script>
-  // --- 1. FIREBASE CONFIG ---
-  // Thay thế bằng Config của bạn nếu cần
+  // CONFIG FIREBASE
   const firebaseConfig = {
     apiKey: "AIzaSyD5d7s-pjoQO4N_a_0OsPAhTMxSkNZOkCY",
     authDomain: "tuoicay-30be7.firebaseapp.com",
@@ -169,27 +168,38 @@
   firebase.initializeApp(firebaseConfig);
   const db = firebase.database();
 
-  // --- 2. MQTT CONFIG ---
+  // CONFIG MQTT
   const BROKER_URL = 'wss://broker.hivemq.com:8884/mqtt';
   const PREFIX = "thaocute_smartgarden/";
   const client = mqtt.connect(BROKER_URL);
 
-  client.on('connect', function () {
-    console.log('Connected to MQTT');
-    client.subscribe(PREFIX + 'update');
+  // LOGIC
+  const REGIONAL_CITIES = {
+    'NORTH': ["Hà Nội", "Hải Phòng", "Bắc Ninh", "Hưng Yên", "Nam Định", "Thái Bình", "Ninh Bình", "Lào Cai"],
+    'CENTRAL': ["Đà Nẵng", "Huế", "Nha Trang", "Vinh", "Quy Nhơn", "Thanh Hóa", "Đà Lạt"],
+    'SOUTH': ["TP.HCM", "Cần Thơ", "Vũng Tàu", "Bình Dương", "Đồng Nai", "Long An", "Cà Mau"]
+  };
+  let currentRegion = 'NORTH';
+
+  client.on('connect', () => {
+      console.log("MQTT Connected");
+      client.subscribe(PREFIX + 'update');
   });
 
-  client.on('message', function (topic, message) {
-    if (topic === PREFIX + 'update') {
-      let d = JSON.parse(message.toString());
+  client.on('message', (topic, msg) => {
+      if (topic === PREFIX + 'update') {
+          let d = JSON.parse(msg.toString());
+          updateUI(d);
+      }
+  });
+
+  function updateUI(d) {
       currentRegion = d.region; 
       
-      // Chuyển màn hình
       document.getElementById('screenRegion').style.display = (d.step === 0) ? 'flex' : 'none';
       document.getElementById('screenMode').style.display   = (d.step === 1) ? 'flex' : 'none';
       document.getElementById('mainApp').style.display      = (d.step === 2) ? 'block' : 'none';
 
-      // Cập nhật dữ liệu
       document.getElementById('loc').innerText = d.location;
       document.getElementById('temp').innerText = d.temp + "°";
       document.getElementById('hum').innerText = d.humidity + "%";
@@ -214,20 +224,16 @@
       const pst = document.getElementById('pumpSt');
       if(d.pump) { pst.innerText = "ĐANG BƠM..."; pst.style.color="#00b894"; }
       else { pst.innerText = "MÁY BƠM TẮT"; pst.style.color="#636e72"; }
-    }
-  });
+  }
 
-  const REGIONAL_CITIES = {
-    'NORTH': ["Hà Nội", "Hải Phòng", "Bắc Ninh", "Hưng Yên", "Nam Định", "Thái Bình", "Ninh Bình", "Lào Cai"],
-    'CENTRAL': ["Đà Nẵng", "Huế", "Nha Trang", "Vinh", "Quy Nhơn", "Thanh Hóa", "Đà Lạt"],
-    'SOUTH': ["TP.HCM", "Cần Thơ", "Vũng Tàu", "Bình Dương", "Đồng Nai", "Long An", "Cà Mau"]
-  };
-  let currentRegion = 'NORTH';
+  function emit(ev, d) {
+      client.publish(PREFIX + 'events', JSON.stringify({event: ev, data: d}));
+  }
 
+  function pump(st) { emit('user_control', {pump: st}); }
+  
   function exit() {
-     if(confirm("Thoát chế độ này? Bơm sẽ TẮT.")) {
-        emit('exit_dashboard', {});
-     }
+     if(confirm("Thoát chế độ này? Bơm sẽ TẮT.")) emit('exit_dashboard', {});
   }
 
   function openCityPopup() {
@@ -265,20 +271,17 @@
           
           const items = Object.values(data).sort((a,b) => (a.time < b.time) ? 1 : -1);
           items.forEach(item => {
-              let cls = 'bg-ai';
-              if(item.action.includes('ON')) cls='bg-on';
-              if(item.action.includes('OFF')) cls='bg-off';
+              let cls = '';
+              if(item.action.includes('ON')) cls='style="color:green"';
+              if(item.action.includes('OFF')) cls='style="color:red"';
               tbody.innerHTML += `<tr>
                 <td><b>${item.time}</b></td>
-                <td><span class="tag ${cls}">${item.action}</span></td>
+                <td><b ${cls}>${item.action}</b></td>
                 <td>${item.detail} (${item.soil}%)</td>
               </tr>`;
           });
       });
   }
-
-  function pump(st) { emit('user_control', {pump: st}); }
-  function emit(ev, d) { client.publish(PREFIX + 'events', JSON.stringify({event: ev, data: d})); }
 </script>
 </body>
 </html>
